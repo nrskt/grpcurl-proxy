@@ -1,7 +1,22 @@
+use std::env;
 use std::net::SocketAddr;
+
+use grpcurl_proxy::Application;
 
 #[tokio::main]
 async fn main() {
-    let addr: SocketAddr = "127.0.0.1:50050".parse().unwrap();
-    warp::serve(grpcurl_proxy::filters::proxy()).run(addr).await;
+    let app = match env::var("DESTINATION_ADDR")
+        .map_err(|e| anyhow::anyhow!(e))
+        .and_then(|dest: String| Application::new(&dest))
+    {
+        Err(e) => {
+            println!("Error: {}", e);
+            std::process::exit(1)
+        }
+        Ok(r) => r,
+    };
+    let addr: SocketAddr = "0.0.0.0:50050".parse().unwrap();
+    warp::serve(grpcurl_proxy::filters::proxy(app))
+        .run(addr)
+        .await;
 }

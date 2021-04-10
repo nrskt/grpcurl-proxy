@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::net::SocketAddr;
 
 use async_trait::async_trait;
 use serde_json::Value;
@@ -39,11 +38,11 @@ impl From<ErrorMessage> for Message {
     }
 }
 
-pub struct LocalGrpcurlCommand {
+pub struct LocalGrpcurlCommand<'a> {
     /// If tls is false then use `-plaintext` option
     tls: bool,
     /// Destination address
-    addr: SocketAddr,
+    addr: &'a str,
     /// gRPC method name
     /// format: `<Service name>/<Method name>`
     method: String,
@@ -56,10 +55,10 @@ pub struct LocalGrpcurlCommand {
 type HeaderKey = String;
 type HeaderValue = String;
 
-impl LocalGrpcurlCommand {
+impl<'a> LocalGrpcurlCommand<'a> {
     pub fn new(
         tls: bool,
-        addr: SocketAddr,
+        addr: &'a str,
         method: String,
         message: Value,
         headers: HashMap<HeaderKey, HeaderValue>,
@@ -75,7 +74,7 @@ impl LocalGrpcurlCommand {
 }
 
 #[async_trait]
-impl GrpcClient for LocalGrpcurlCommand {
+impl<'a> GrpcClient for LocalGrpcurlCommand<'a> {
     async fn unary_call(&self) -> anyhow::Result<Message> {
         let mut cmd = Command::new("grpcurl");
         if !self.tls {

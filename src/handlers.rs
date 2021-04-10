@@ -4,10 +4,11 @@ use std::convert::TryInto;
 use http::header::{HeaderMap, HeaderName, HeaderValue};
 use serde_json::Value;
 
-use crate::{GrpcClient, InternalError, LocalGrpcurlCommand};
+use crate::{Application, GrpcClient, InternalError, LocalGrpcurlCommand};
 
 /// Handler for calling grpc method
 pub(crate) async fn proxy_handler(
+    app: Application,
     service: String,
     method: String,
     message: Value,
@@ -17,13 +18,16 @@ pub(crate) async fn proxy_handler(
 
     let cmd = LocalGrpcurlCommand::new(
         false,
-        "127.0.0.1:50051".parse().unwrap(),
+        app.dest(),
         format!("{}/{}", service, method),
         message,
         map,
     );
     match cmd.unary_call().await {
-        Err(e) => Err(warp::reject::custom(InternalError::new(e))),
+        Err(e) => {
+            println!("Failed to call method");
+            Err(warp::reject::custom(InternalError::new(e)))
+        }
         Ok(r) => Ok(warp::reply::json(r.body())),
     }
 }
