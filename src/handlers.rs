@@ -25,7 +25,7 @@ pub(crate) async fn proxy_handler(
     );
     match cmd.unary_call().await {
         Err(e) => {
-            println!("Failed to call method");
+            log::error!("Failed to call method");
             Err(warp::reject::custom(InternalError::new(e)))
         }
         Ok(r) => Ok(warp::reply::json(r.body())),
